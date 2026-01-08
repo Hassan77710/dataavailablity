@@ -1,0 +1,401 @@
+# training and loss data
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Load the dataset
+data = pd.read_csv("C:/Users/Personal/Desktop/data5.csv")
+
+# Separate independent and dependent variables
+X = data[['TC', 'FF', 'GDP', 'RE']].values
+y = data['GHG'].values
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardize the data
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+---------------------------------------------
+# run DNN model 
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Define the DNN model
+model_dnn = Sequential()
+model_dnn.add(Dense(64, input_dim=X_train.shape[1], activation='relu'))
+model_dnn.add(Dense(32, activation='relu'))
+model_dnn.add(Dense(1, activation='linear'))
+
+# Compile the model
+model_dnn.compile(optimizer='adam', loss='mean_squared_error')
+
+# Train the model
+history_dnn = model_dnn.fit(X_train, y_train, epochs=50, batch_size=10, validation_split=0.2, verbose=1)
+
+# Evaluate the model
+loss_dnn = model_dnn.evaluate(X_test, y_test)
+print(f'DNN Test Loss: {loss_dnn}')
+---------------------------------------
+# plot of DNN 
+import matplotlib.pyplot as plt
+
+# Create a figure for the DNN training and validation loss
+plt.figure(figsize=(10, 6))  # Optional: Adjust figure size for better readability
+
+# Plot DNN Training and Validation Loss
+plt.plot(history_dnn.history['loss'], label='DNN Training Loss')
+plt.plot(history_dnn.history['val_loss'], label='DNN Validation Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('DNN Training and Validation Loss')
+plt.legend()
+plt.grid(True)  # Add grid lines
+
+# Show the plot
+plt.tight_layout()
+# Save the plot with high quality
+plt.savefig('DNN Training and Validation Loss201.jpeg', dpi=700, bbox_inches='tight')  # High resolution
+plt.show()
+-------------------------------------------------
+# Compute residuals
+residuals_dnn = y_test - y_pred_dnn.flatten()
+
+
+# Residual Plots
+plt.figure(figsize=(12, 4))
+
+plt.subplot(1, 2, 1)
+plt.scatter(y_pred_dnn, residuals_dnn, alpha=0.7, s=200, color='blue')
+plt.axhline(0, color='r', linestyle='--')
+plt.xlabel('Predicted Values')
+plt.ylabel('Residuals')
+plt.title('DNN Residuals')
+
+
+plt.tight_layout()
+plt.show()
+-----------------------------------------------------------------------------
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.metrics import r2_score
+
+# Compute R-squared values
+r2_dnn = r2_score(y_test, y_pred_dnn)
+
+
+# Create a reference line
+def plot_reference_line(ax, xlim, ylim):
+    # Create a line from min to max of the axes
+    x_vals = np.linspace(xlim[0], xlim[1], 100)
+    ax.plot(x_vals, x_vals, 'r--', lw=2, label='Perfect Prediction')
+
+# DNN Predictions vs True Values
+plt.figure(figsize=(14, 7))
+
+plt.subplot(1, 2, 1)
+plt.scatter(y_test, y_pred_dnn, alpha=0.5, s=150, color='green')
+plt.xlabel('True Values')
+plt.ylabel('Predictions')
+plt.title('DNN Predictions vs True Values')
+xlim = (min(y_test.min(), y_pred_dnn.min()), max(y_test.max(), y_pred_dnn.max()))
+ylim = xlim
+plot_reference_line(plt.gca(), xlim, ylim)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+
+# Annotate R-squared value
+plt.text(
+    0.05, 0.95, f'R² = {r2_dnn:.4f}', 
+    horizontalalignment='left', verticalalignment='top', 
+    transform=plt.gca().transAxes,
+    fontsize=12, color='black', bbox=dict(facecolor='white', alpha=0.7, edgecolor='none')
+)
+plt.tight_layout()
+# Save the plot with high quality
+plt.savefig('CNN Predictions vs True Values231.jpeg', dpi=700, bbox_inches='tight')  # High resolution
+plt.show()
+------------------------------------------------
+import matplotlib.pyplot as plt
+
+# Define performance metrics for DNN
+mae_dnn = 0.1165
+mse_dnn = 0.0275
+r2_dnn = 0.9377
+
+# Define performance metrics
+metrics = {
+    'MAE': [mae_dnn],
+    'MSE': [mse_dnn],
+    'R^2': [r2_dnn]
+}
+
+models = ['DNN']
+
+# Define a muted color palette
+colors = ['#1f77b4', 'blue', '#2ca02c']  # Blue, Orange, Green
+
+# Plot performance metrics
+fig, axs = plt.subplots(1, 3, figsize=(18, 10))
+
+# MAE Bar Chart
+axs[0].bar(models, metrics['MAE'], color=colors[0])
+axs[0].set_title('Mean Absolute Error (MAE)', fontsize=16)
+axs[0].set_xlabel('Model', fontsize=14)
+axs[0].set_ylabel('MAE', fontsize=14)
+for i, v in enumerate(metrics['MAE']):
+    axs[0].text(i, v + 0.01, f'{v:.4f}', ha='center', va='bottom', fontsize=12)
+axs[0].set_ylim(0, metrics['MAE'][0] + 0.05)
+
+# MSE Bar Chart
+axs[1].bar(models, metrics['MSE'], color=colors[1])
+axs[1].set_title('Mean Squared Error (MSE)', fontsize=16)
+axs[1].set_xlabel('Model', fontsize=14)
+axs[1].set_ylabel('MSE', fontsize=14)
+for i, v in enumerate(metrics['MSE']):
+    axs[1].text(i, v + 0.001, f'{v:.4f}', ha='center', va='bottom', fontsize=12)
+axs[1].set_ylim(0, metrics['MSE'][0] + 0.005)
+
+# R^2 Bar Chart
+axs[2].bar(models, metrics['R^2'], color=colors[2])
+axs[2].set_title('R-squared (R^2)', fontsize=16)
+axs[2].set_xlabel('Model', fontsize=14)
+axs[2].set_ylabel('R^2', fontsize=14)
+for i, v in enumerate(metrics['R^2']):
+    axs[2].text(i, v + 0.01, f'{v:.4f}', ha='center', va='bottom', fontsize=12)
+axs[2].set_ylim(0, 1.0)
+
+# Adjust layout
+plt.tight_layout()
+# Save the plot with high quality
+plt.savefig('Robust_tests24.jpeg', dpi=700, bbox_inches='tight')  # High resolution
+plt.show()
+--------------------------------
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load the dataset
+data = pd.read_csv("C:/Users/Personal/Desktop/data5.csv")
+
+# Summary statistics
+# print(data.describe())
+
+# Set the style
+sns.set(style="whitegrid")
+
+# Create a mask for the upper triangle
+mask = np.triu(np.ones_like(data.corr(), dtype=bool))
+
+# Create a heatmap with a different palette and size
+plt.figure(figsize=(8, 6))
+sns.heatmap(data.corr(), mask=mask, annot=True, fmt=".2f", cmap="magma", linewidths=.5)
+# plt.title('Upper Triangle Correlation Matrix')
+# Save the plot with high quality
+plt.savefig('Coreelation121.jpeg', dpi=700, bbox_inches='tight')  # High resolution
+plt.show()
+-----------------------------------
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+data = pd.read_csv("C:/Users/Personal/Desktop/data6.csv")
+
+# Select the relevant columns for outlier detection
+columns = ['TC', 'FF', 'GDP', 'RE', 'GHG']
+data_selected = data[columns]
+
+# Calculate the Q1 (25th percentile) and Q3 (75th percentile) for each column
+Q1 = data_selected.quantile(0.25)
+Q3 = data_selected.quantile(0.75)
+
+# Calculate the IQR for each column
+IQR = Q3 - Q1
+
+# Define the lower and upper bounds for outliers
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Remove rows that are outside the bounds for any column
+data_no_outliers_IQR = data_selected[~((data_selected < lower_bound) | (data_selected > upper_bound)).any(axis=1)]
+
+# Plotting the boxplots in two rows and five columns (one for each variable)
+plt.figure(figsize=(16, 8))
+
+# Create horizontal boxplots for each variable (original data - blue color)
+for i, column in enumerate(columns, 1):
+    plt.subplot(2, 5, i)  # 2 rows, 5 columns (first row for original data)
+    sns.boxplot(data=data_selected[column], color='blue', orient='h')  # Blue color for original data
+    plt.title(f'{column} - Original Data', fontsize=12)
+
+# Create horizontal boxplots for each variable (after outlier removal - green color)
+for i, column in enumerate(columns, 1):
+    plt.subplot(2, 5, i + 5)  # 2 rows, 5 columns (second row for cleaned data)
+    sns.boxplot(data=data_no_outliers_IQR[column], color='green', orient='h')  # Green color for cleaned data
+    plt.title(f'{column} - After Outlier Removal', fontsize=12)
+
+# Adjust layout and display
+plt.tight_layout()
+# Save the plot with high quality
+plt.savefig('Boxplotcleaned.jpeg', dpi=700, bbox_inches='tight')  # High resolution
+plt.show()
+
+# Optionally, display the cleaned data
+# print("Data after outlier removal using IQR method:")
+# print(data_no_outliers_IQR.head())
+--------------------------
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Load your dataset
+data = pd.read_csv("C:/Users/Personal/Desktop/data7.csv")
+
+# Select the variables and arrange them by median
+variables = ['EM', 'EG', 'MGP', 'ET', 'E-MAG', 'Cells', 'EA']
+data_subset = data[variables]
+medians = data_subset.median().sort_values()
+sorted_variables = medians.index.tolist()
+
+# Set the size of the plot
+plt.figure(figsize=(14, 8))
+
+# Create a box plot with a vibrant color palette
+sns.boxplot(data=data[sorted_variables], palette='Set2', linewidth=2.5)
+
+# Add title and labels
+# plt.title('Box Plot of Variables', fontsize=20, fontweight='bold', color='darkblue')
+plt.xlabel('Variables', fontsize=14, fontweight='bold', color='black')
+plt.ylabel('Values', fontsize=14, fontweight='bold', color='black')
+
+# Add grid lines
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Annotate medians on the box plot
+for i, variable in enumerate(sorted_variables):
+    median_value = data[variable].median()
+    plt.text(i, median_value, f'{median_value:.2f}', 
+             horizontalalignment='center', size=12, color='black', weight='bold')
+
+# Show the plot with improved layout
+plt.xticks(rotation=45, fontsize=12)
+plt.tight_layout()  # Adjust layout to prevent clipping
+# Save the plot with high quality
+plt.savefig('Boxplot121.jpeg', dpi=700, bbox_inches='tight')  # High resolution
+plt.show()
+--------------------------------
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+# Emissions data
+data = {
+    "Country": [
+        "Argentina", "Australia", "Brazil", "Canada", "China", "France", "Germany", "India",
+        "Indonesia", "Iran", "Italy", "Japan", "Malaysia", "Mexico", "Pakistan", "Poland",
+        "Russia", "Saudi Arabia", "South Africa", "South Korea", "Thailand", "Turkey",
+        "United Kingdom", "United States", "Vietnam"
+    ],
+    "Per Capita Emissions": [
+        9.267164, 21.964611, 11.281123, 20.356884, 9.819389, 5.031376, 7.931879, 2.9181125,
+        6.834751, 11.756297, 6.0840797, 8.294703, 11.832582, 5.995628, 2.108759, 8.743342,
+        18.502888, 26.427397, 8.114828, 12.115323, 5.813638, 7.0092773, 5.710957, 17.16229, 5.3386784
+    ]
+}
+df = pd.DataFrame(data)
+
+# Load world geometries
+world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+
+# Standardize names
+name_map = {
+    "United States of America": "United States",
+    "South Korea": "South Korea",
+    "North Korea": "North Korea",
+    "Russia": "Russia",
+    "Iran": "Iran",
+    "Vietnam": "Vietnam",
+}
+world['name'] = world['name'].replace(name_map)
+
+# Merge
+merged = world.merge(df, how="left", left_on="name", right_on="Country")
+
+# Set up plot and color normalization
+fig, ax = plt.subplots(figsize=(15, 10))
+cmap = plt.cm.YlOrRd
+norm = mpl.colors.Normalize(vmin=merged["Per Capita Emissions"].min(skipna=True),
+                            vmax=merged["Per Capita Emissions"].max(skipna=True))
+
+# Plot map
+merged.plot(
+    column="Per Capita Emissions",
+    cmap=cmap,
+    linewidth=0.8,
+    ax=ax,
+    edgecolor='0.8',
+    missing_kwds={"color": "lightgray", "label": "No data"}
+)
+
+# Custom colorbar with reduced height
+sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+sm._A = []  # Required for ScalarMappable
+cbar = fig.colorbar(sm, ax=ax, fraction=0.025, pad=0.02, shrink=0.5)
+cbar.set_label("tCO₂e per capita")
+
+# Final touches
+ax.set_title("Per Capita Greenhouse Gas Emissions by Country (2023)", fontsize=16)
+ax.axis('off')
+# Save the image if needed
+plt.savefig("Per Capita Greenhouse Gas Emissions by Country (2023).png", dpi=300, bbox_inches='tight')
+
+plt.show()
+----------------------------------------
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Provided data
+data = {
+    'Goods': ['EM','EG','MGP','ET','E-MAG','Cells','EA'],
+    
+    '2011': [0.60,0.06,0.70,0.69,1.19,0.47,0.20],
+    '2012': [0.71,0.26,0.57,0.65,1.19,0.53,0.32],
+    '2013': [0.79,0.56,0.62,0.71,1.30,0.00,-0.14],
+    '2014': [0.76,0.31,0.78,0.89,1.31,-0.01,-0.09],
+    '2015': [0.78,0.59,0.57,0.94,1.06,-0.09,-0.02],
+    '2016': [0.64,0.67,0.51,0.92,1.15,0.63,0.26],
+    '2017': [0.86,0.51,0.50,0.92,1.35,0.54,0.52],
+    '2018': [1.01,0.30,0.62,0.44,1.41,0.86,0.65],
+    '2019': [0.77,0.08,0.58,0.63,1.41,0.72,0.87],
+    '2020': [0.76,0.54,0.57,0.70,1.16,0.77,0.90],
+    '2021': [0.77,0.31,0.66,0.66,1.05,0.69,1.06],
+    '2022': [0.80,0.53,0.77,0.71,1.05,0.66,1.09]
+}
+
+# Convert data to DataFrame
+df = pd.DataFrame(data)
+
+# Set 'Country' as index
+df.set_index('Goods', inplace=True)
+
+# Sort DataFrame by index (country names) in descending order
+df = df.sort_index(ascending=False)
+
+# Sort the table by the last column ('2022') in descending order
+df = df.sort_values(by=['2022'], ascending=False)
+
+# Plot heatmap
+plt.figure(figsize=(10, 8))
+sns.heatmap(df, cmap='YlOrBr', annot=True, fmt=".2f", linewidths=.5)
+# plt.title('Carbon Dioxide Emissions by Country (in thousands)')
+plt.xlabel('Year', fontweight='bold')
+plt.ylabel('Goods', fontweight='bold')
+plt.xticks(rotation=45)
+plt.yticks(rotation=0)
+plt.savefig('Complexity (in thousands).png', dpi=400, bbox_inches='tight')  # Adjust dpi for higher quality
